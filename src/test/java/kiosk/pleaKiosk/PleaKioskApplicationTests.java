@@ -1,0 +1,13 @@
+package kiosk.pleaKiosk;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class PleaKioskApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
