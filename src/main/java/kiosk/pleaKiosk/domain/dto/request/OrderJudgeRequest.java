@@ -14,7 +14,7 @@ public class OrderJudgeRequest {
     @Min(value = 1,message = "음수를 입력할 수 없습니다")
     private Long id;
 
-    @NotBlank(message = "상태값은 필수입니다")
+    @NotNull(message = "상태값은 필수입니다")
     private OrderStatus orderStatus = OrderStatus.valueOf("APPROVED");
 
 }
