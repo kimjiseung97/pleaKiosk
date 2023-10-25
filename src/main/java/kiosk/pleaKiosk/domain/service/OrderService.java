@@ -1,19 +1,20 @@
 package kiosk.pleaKiosk.domain.service;
+import kiosk.pleaKiosk.domain.codes.ErrorCode;
+import kiosk.pleaKiosk.domain.codes.SuccessCode;
 import kiosk.pleaKiosk.domain.dto.request.OrderDeleteRequest;
 import kiosk.pleaKiosk.domain.dto.request.OrderJudgeRequest;
 import kiosk.pleaKiosk.domain.dto.request.OrderModifyRequest;
 import kiosk.pleaKiosk.domain.dto.request.OrderRequest;
+import kiosk.pleaKiosk.domain.dto.response.ApiResponse;
+import kiosk.pleaKiosk.domain.dto.response.OrderModifyResponse;
 import kiosk.pleaKiosk.domain.dto.response.OrderResponse;
 import kiosk.pleaKiosk.domain.entity.*;
-import kiosk.pleaKiosk.domain.exception.CustomException;
-import kiosk.pleaKiosk.domain.exception.ErrorCode;
 import kiosk.pleaKiosk.domain.repository.ConsumerRepository;
 import kiosk.pleaKiosk.domain.repository.OrderRepository;
 import kiosk.pleaKiosk.domain.repository.PaymentRepository;
 import kiosk.pleaKiosk.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.ast.Or;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -35,21 +36,23 @@ public class OrderService {
     private final PaymentRepository paymentRepository;
 
     @Transactional
-    public void registerOrder(OrderRequest orderRequest) {
+    public ApiResponse<Order> registerOrder(OrderRequest orderRequest) {
         log.info("주문등록 로직 시작 ={}",orderRequest);
 
-        Product product = productRepository.findById(orderRequest.getProductId()).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
-        Consumer consumer = consumerRepository.findById(orderRequest.getTableId()).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+        Product product = productRepository.findById(orderRequest.getProductId()).orElseThrow(() ->new RuntimeException(String.valueOf(ErrorCode.INSERT_ERROR)));
+        Consumer consumer = consumerRepository.findById(orderRequest.getTableId()).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.INSERT_ERROR)));
 
-        saveProductAndOrderAndPayment(orderRequest, product, consumer);
+        Order order = saveProductAndOrderAndPayment(orderRequest, product, consumer);
         log.info("주문등록 로직 종료");
+        return new ApiResponse(order,SuccessCode.INSERT_SUCCESS.getStatus(),SuccessCode.INSERT_SUCCESS.getMessage());
+
     }
 
-    private void saveProductAndOrderAndPayment(OrderRequest orderRequest, Product product, Consumer consumer) {
+    private Order saveProductAndOrderAndPayment(OrderRequest orderRequest, Product product, Consumer consumer) {
         int amount = product.getAmount();
 
         if (amount<orderRequest.getAmount()){
-            throw new CustomException(ErrorCode.UNPROCESSABLE_ENTITY);
+            throw new RuntimeException(String.valueOf(ErrorCode.INSERT_ERROR));
         }
 
         if(amount==0){
@@ -59,9 +62,9 @@ public class OrderService {
 
 
         Order newOrder = getOrder(orderRequest, product, consumer,OrderStatus.PENDING);
-        orderRepository.save(newOrder);
+        Order save = orderRepository.save(newOrder);
         product.setAmount(amount- orderRequest.getAmount());
-
+        return save;
     }
 
     private Payment getPayment(Consumer consumer, Order newOrder, int price) {
@@ -84,13 +87,12 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getAllOrderList(Long productId, Pageable pageable) {
+    public ApiResponse<Page<OrderResponse>> getAllOrderList(Long productId, Pageable pageable) {
         log.info("전체 주문리스트 페이징 로직 시작 = {}",pageable);
-        Product product = productRepository.findById(productId).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+        Product product = productRepository.findById(productId).orElseThrow(() -> new NullPointerException());
         Page<Order> allOrderList = orderRepository.findByProduct(product, pageable);
         log.info("전체 주문리스트 페이징 로직 종료");
-
-        return allOrderList.map(Order -> OrderResponse
+        Page<OrderResponse> orderResponses = allOrderList.map(Order -> OrderResponse
                 .builder()
                 .productId(Order.getProduct().getId())
                 .productName(Order.getProduct().getName())
@@ -101,17 +103,20 @@ public class OrderService {
                 .lastModifiedDate(Order.getLastModifiedDate())
                 .orderStatus(Order.getOrderStatus())
                 .build());
+
+        return new ApiResponse(orderResponses,SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
+
 
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getMyOrderList(Long consumerId, Pageable pageable) {
+    public ApiResponse<Page<OrderResponse>> getMyOrderList(Long consumerId, Pageable pageable) {
         log.info("내 주문리스트 확인 로직 시작= {}",pageable);
-        Consumer consumer = consumerRepository.findById(consumerId).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+        Consumer consumer = consumerRepository.findById(consumerId).orElseThrow(() -> new RuntimeException());
         Page<Order> findOrderListByConsumer = orderRepository.findByConsumer(consumer, pageable);
         log.info("내 주문리스트 확인 로직 종료");
 
-        return findOrderListByConsumer.map(Order -> OrderResponse
+        Page<OrderResponse> orderResponses = findOrderListByConsumer.map(Order -> OrderResponse
                 .builder()
                 .productId(Order.getProduct().getId())
                 .productName(Order.getProduct().getName())
@@ -122,24 +127,45 @@ public class OrderService {
                 .lastModifiedDate(Order.getLastModifiedDate())
                 .orderStatus(Order.getOrderStatus())
                 .build());
+        return new ApiResponse(orderResponses,SuccessCode.SELECT_SUCCESS.getStatus(), SuccessCode.SELECT_SUCCESS.getMessage());
+
     }
 
     @Transactional
-    public void modifyMyOrder(OrderModifyRequest orderModifyRequest) {
+    public ApiResponse<OrderModifyResponse> modifyMyOrder(OrderModifyRequest orderModifyRequest) {
         log.info("주문 수정 로직 시작 = {}",orderModifyRequest);
         //주문번호로 주문 가져오기
-        Order findOrderById = orderRepository.findById(orderModifyRequest.getId()).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+        Order findOrderById = orderRepository.findById(orderModifyRequest.getId()).orElseThrow(() -> new NullPointerException());
+
         //주문번호에 주문된 상품
         Product findProductByOrderNumber = findOrderById.getProduct();
         updateOrderAndProductAmount(orderModifyRequest, findOrderById, findProductByOrderNumber);
-        log.info("주문수정 로직 종료");
 
+        log.info("주문수정 로직 종료");
+        OrderModifyResponse orderModifyResponse = makeModifyOrder(findOrderById);
+
+        return new ApiResponse(orderModifyResponse,SuccessCode.UPDATE_SUCCESS.getStatus(), SuccessCode.UPDATE_SUCCESS.getMessage());
     }
 
-    private void updateOrderAndProductAmount(OrderModifyRequest orderModifyRequest, Order findOrderById, Product findProductByOrderNumber) {
+
+    private OrderModifyResponse makeModifyOrder(Order findOrderById) {
+        return OrderModifyResponse
+                .builder()
+                .id(findOrderById.getId())
+                .consumerId(findOrderById.getConsumer().getId())
+                .productId(findOrderById.getProduct().getId())
+                .productName(findOrderById.getProduct().getName())
+                .amount(findOrderById.getAmount())
+                .createdDate(findOrderById.getCreatedDate())
+                .lastModifiedDate(findOrderById.getLastModifiedDate())
+                .orderStatus(findOrderById.getOrderStatus())
+                .build();
+    }
+
+    private void updateOrderAndProductAmount(OrderModifyRequest orderModifyRequest, Order findOrderById, Product findProductByOrderNumber) throws RuntimeException {
         //주문상태가 승인이거나 거절이라면 익셉션 처리
         if(findOrderById.getOrderStatus()==OrderStatus.APPROVED || findOrderById.getOrderStatus()==OrderStatus.REJECTED){
-            throw new CustomException(ErrorCode.FORBIDDEN_ORDER);
+            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
         }
         //상품번호가 바뀌었다면
         if(!Objects.equals(findProductByOrderNumber.getId(), orderModifyRequest.getProductId())) {
@@ -160,7 +186,7 @@ public class OrderService {
 
         //주문수정요청이 원래 주문수량보다많으면서 재고수량보단 적어야됌
         if(updateRequestAmount>leftamount){
-            throw new CustomException(ErrorCode.UNPROCESSABLE_ENTITY);
+            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
         }
         
         if(originalOrderedAmount < updateRequestAmount){
@@ -173,10 +199,10 @@ public class OrderService {
 
     private void modifyAmountAndProduct(OrderModifyRequest orderModifyRequest, Order findOrderById, Product findProductByOrderNumber) {
             //원래 주문 주문수정요청대로 업데이트해준다
-            Product modifyOrderProduct = productRepository.findById(orderModifyRequest.getProductId()).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ITEM));
+            Product modifyOrderProduct = productRepository.findById(orderModifyRequest.getProductId()).orElseThrow(() -> new NullPointerException());
             //재고보다 주문요청이 크면 안됀다
             if(modifyOrderProduct.getAmount() < orderModifyRequest.getAmount()){
-                throw new CustomException(ErrorCode.UNPROCESSABLE_ENTITY);
+                throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
             }
             findOrderById.setProduct(modifyOrderProduct);
             findOrderById.setAmount(orderModifyRequest.getAmount());
@@ -186,7 +212,7 @@ public class OrderService {
     }
 
     @Transactional
-    public void deleteOrder(OrderDeleteRequest orderDeleteRequest) {
+    public ApiResponse deleteOrder(OrderDeleteRequest orderDeleteRequest) {
         log.info("주문삭제 정보 로직 시작 - {}",orderDeleteRequest.getId());
         List<Order> orders = orderRepository.findAllById(Collections.singleton(orderDeleteRequest.getId()));
 
@@ -194,35 +220,37 @@ public class OrderService {
                 .filter(order -> order.getOrderStatus() == OrderStatus.APPROVED)
                 .collect(Collectors.toList());
         if(!completedOrders.isEmpty()){
-            throw new CustomException(ErrorCode.FORBIDDEN_ORDER);
+            throw new RuntimeException(String.valueOf(ErrorCode.DELETE_ERROR));
         }
         updateProductAmount(orderDeleteRequest);
 
         orderRepository.deleteById(orderDeleteRequest.getId());
 
         log.info("주문삭제 정보 로직 종료");
+
+        return new ApiResponse(SuccessCode.DELETE_SUCCESS.getStatus(),SuccessCode.DELETE_SUCCESS.getMessage());
     }
 
     private void updateProductAmount(OrderDeleteRequest orderDeleteRequest) {
-        Order order = orderRepository.findById(orderDeleteRequest.getId()).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ORDER));
+        Order order = orderRepository.findById(orderDeleteRequest.getId()).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.NOT_FOUND_ERROR)));
         Product product = order.getProduct();
         product.setAmount(product.getAmount() + order.getAmount());
     }
 
     @Transactional
-    public OrderStatus confirmOrder(OrderJudgeRequest orderJudgeRequest) {
+    public ApiResponse confirmOrder(OrderJudgeRequest orderJudgeRequest) {
         log.info("주문 승인로직 시작 = {}",orderJudgeRequest);
-        Order order = orderRepository.findById(orderJudgeRequest.getId()).orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_ORDER));
+        Order order = orderRepository.findById(orderJudgeRequest.getId()).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.NOT_FOUND_ERROR)));
         confirmOrder(orderJudgeRequest, order);
         log.info("주문 승인로직 종료");
-        return order.getOrderStatus();
+        return new ApiResponse(SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
     }
 
     private void confirmOrder(OrderJudgeRequest orderJudgeRequest, Order order) {
 
         Payment byOrderId = paymentRepository.findByOrderId(orderJudgeRequest.getId());
         if(byOrderId!=null){
-            throw new CustomException(ErrorCode.CONFLICT);
+            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
         }
 
         updateOrderStatus(orderJudgeRequest, order);
