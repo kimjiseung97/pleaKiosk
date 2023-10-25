@@ -1,6 +1,7 @@
 package kiosk.pleaKiosk.domain.dto.response;
 
 import kiosk.pleaKiosk.domain.entity.OrderStatus;
+import kiosk.pleaKiosk.domain.entity.Product;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -10,6 +11,10 @@ import java.time.LocalDateTime;
 @Builder
 @Getter
 public class OrderResponse {
+
+    private Long productId;
+
+    private String productName;
 
     private Long orderId;
 

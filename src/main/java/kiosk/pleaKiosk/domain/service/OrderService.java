@@ -13,6 +13,7 @@ import kiosk.pleaKiosk.domain.repository.PaymentRepository;
 import kiosk.pleaKiosk.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -90,6 +92,8 @@ public class OrderService {
 
         return allOrderList.map(Order -> OrderResponse
                 .builder()
+                .productId(Order.getProduct().getId())
+                .productName(Order.getProduct().getName())
                 .amount(Order.getAmount())
                 .orderId(Order.getId())
                 .consumerId(Order.getConsumer().getId())
@@ -109,6 +113,8 @@ public class OrderService {
 
         return findOrderListByConsumer.map(Order -> OrderResponse
                 .builder()
+                .productId(Order.getProduct().getId())
+                .productName(Order.getProduct().getName())
                 .amount(Order.getAmount())
                 .orderId(Order.getId())
                 .consumerId(Order.getConsumer().getId())
@@ -126,7 +132,7 @@ public class OrderService {
         //주문번호에 주문된 상품
         Product findProductByOrderNumber = findOrderById.getProduct();
         updateOrderAndProductAmount(orderModifyRequest, findOrderById, findProductByOrderNumber);
-        log.info("주문수정 로직 종료 = {}");
+        log.info("주문수정 로직 종료");
 
     }
 
@@ -136,7 +142,7 @@ public class OrderService {
             throw new CustomException(ErrorCode.FORBIDDEN_ORDER);
         }
         //상품번호가 바뀌었다면
-        if(findProductByOrderNumber.getId()!= orderModifyRequest.getProductId()) {
+        if(!Objects.equals(findProductByOrderNumber.getId(), orderModifyRequest.getProductId())) {
             modifyAmountAndProduct(orderModifyRequest, findOrderById, findProductByOrderNumber);
         }
 
