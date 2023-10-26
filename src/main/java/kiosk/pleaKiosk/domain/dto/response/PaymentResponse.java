@@ -1,11 +1,8 @@
 package kiosk.pleaKiosk.domain.dto.response;
-
-
 import kiosk.pleaKiosk.domain.entity.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-
 import java.time.LocalDateTime;
 
 @AllArgsConstructor

@@ -1,9 +1,6 @@
 package kiosk.pleaKiosk.domain.dto.response;
-
 import kiosk.pleaKiosk.domain.entity.OrderStatus;
-import kiosk.pleaKiosk.domain.entity.Product;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Setter

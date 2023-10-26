@@ -1,5 +1,4 @@
 package kiosk.pleaKiosk.domain.dto.response;
-
 import kiosk.pleaKiosk.domain.entity.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

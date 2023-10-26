@@ -1,10 +1,8 @@
 package kiosk.pleaKiosk.domain.dto.request;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 

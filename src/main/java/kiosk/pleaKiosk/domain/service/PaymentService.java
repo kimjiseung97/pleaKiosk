@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.Valid;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -62,6 +63,7 @@ public class PaymentService {
 
     private void updatePayStatus(Payment payment) {
         payment.setPayStatus(PaymentStatus.PAID);
+        payment.setCreatedDate(LocalDateTime.now());
     }
 
     @Transactional

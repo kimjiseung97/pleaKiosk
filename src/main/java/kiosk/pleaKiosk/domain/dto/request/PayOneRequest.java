@@ -1,8 +1,5 @@
 package kiosk.pleaKiosk.domain.dto.request;
-
 import lombok.Getter;
-
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Getter

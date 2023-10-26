@@ -1,16 +1,18 @@
 package kiosk.pleaKiosk.domain.dto.response;
+
+
+import kiosk.pleaKiosk.domain.entity.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import org.springframework.data.domain.Page;
 
+
+@Getter
 @AllArgsConstructor
 @Builder
-@Getter
-public class ProductAndOrderList {
+public class OrderConfirmResponse {
+    private Long id;
 
-    ProductResponse productResponse;
-
-    Page<OrderList> orderList;
+    private OrderStatus orderStatus;
 
 }

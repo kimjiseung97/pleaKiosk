@@ -1,7 +1,5 @@
 package kiosk.pleaKiosk.domain.entity;
-
 import lombok.*;
-
 import javax.persistence.*;
 
 

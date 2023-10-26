@@ -1,8 +1,5 @@
 package kiosk.pleaKiosk.domain.dto.request;
-
 import lombok.*;
-
-import javax.persistence.Column;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -13,7 +10,6 @@ import javax.validation.constraints.NotNull;
 @AllArgsConstructor
 @ToString
 public class ProductModifyRequest {
-
 
     @NotNull(message = "상품번호는 필수입니다")
     private Long id;

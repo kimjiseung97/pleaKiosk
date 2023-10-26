@@ -1,10 +1,5 @@
 package kiosk.pleaKiosk.domain.dto.request;
-
 import lombok.Getter;
-import lombok.Setter;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Getter

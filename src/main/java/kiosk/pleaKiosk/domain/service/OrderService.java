@@ -18,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.validation.constraints.Null;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -36,15 +35,27 @@ public class OrderService {
     private final PaymentRepository paymentRepository;
 
     @Transactional
-    public ApiResponse<Order> registerOrder(OrderRequest orderRequest) {
+    public ApiResponse<OrderRegisterResponse> registerOrder(OrderRequest orderRequest) {
         log.info("주문등록 로직 시작 ={}",orderRequest);
 
         Product product = productRepository.findById(orderRequest.getProductId()).orElseThrow(() ->new NullPointerException("해당하는 상품을 찾을 수 없습니다"));
         Consumer consumer = consumerRepository.findById(orderRequest.getTableId()).orElseThrow(() -> new NullPointerException("해당하는 테이블을 찾을 수 없습니다"));
 
         Order order = saveProductAndOrderAndPayment(orderRequest, product, consumer);
+
+        OrderRegisterResponse orderRegisterResponse = OrderRegisterResponse
+                .builder()
+                .orderStatus(order.getOrderStatus())
+                .consumerId(order.getConsumer().getId())
+                .productId(order.getProduct().getId())
+                .orderId(order.getId())
+                .createdDate(order.getCreatedDate())
+                .productName(order.getProduct().getName())
+                .amount(order.getAmount())
+                .build();
+
         log.info("주문등록 로직 종료");
-        return new ApiResponse(order,SuccessCode.INSERT_SUCCESS.getStatus(),SuccessCode.INSERT_SUCCESS.getMessage());
+        return new ApiResponse(orderRegisterResponse,SuccessCode.INSERT_SUCCESS.getStatus(),SuccessCode.INSERT_SUCCESS.getMessage());
 
     }
 
@@ -56,12 +67,12 @@ public class OrderService {
         }
 
         if(amount==0){
-            Order newOrder = getOrder(orderRequest, product, consumer,OrderStatus.PENDING);
+            Order newOrder = getOrder(orderRequest, product, consumer);
             orderRepository.save(newOrder);
         }
 
 
-        Order newOrder = getOrder(orderRequest, product, consumer,OrderStatus.PENDING);
+        Order newOrder = getOrder(orderRequest, product, consumer);
         Order save = orderRepository.save(newOrder);
         product.setAmount(amount- orderRequest.getAmount());
         return save;
@@ -76,10 +87,10 @@ public class OrderService {
                 .build();
     }
 
-    private Order getOrder(OrderRequest orderRequest, Product product, Consumer consumer, OrderStatus orderStatus) {
+    private Order getOrder(OrderRequest orderRequest, Product product, Consumer consumer) {
         return Order
                     .builder()
-                    .orderStatus(orderStatus)
+                    .orderStatus(OrderStatus.PENDING)
                     .consumer(consumer)
                     .amount(orderRequest.getAmount())
                     .product(product)
@@ -161,7 +172,7 @@ public class OrderService {
         log.info("주문수정 로직 종료");
         OrderModifyResponse orderModifyResponse = makeModifyOrder(findOrderById);
 
-        return new ApiResponse(orderModifyResponse,SuccessCode.UPDATE_SUCCESS.getStatus(), SuccessCode.UPDATE_SUCCESS.getMessage());
+        return new ApiResponse<>(orderModifyResponse,SuccessCode.UPDATE_SUCCESS.getStatus(), SuccessCode.UPDATE_SUCCESS.getMessage());
     }
 
 
@@ -258,22 +269,30 @@ public class OrderService {
     }
 
     @Transactional
-    public ApiResponse confirmOrder(OrderJudgeRequest orderJudgeRequest) {
+    public ApiResponse<OrderConfirmResponse> confirmOrder(OrderJudgeRequest orderJudgeRequest) {
         log.info("주문 승인로직 시작 = {}",orderJudgeRequest);
         Order order = orderRepository.findById(orderJudgeRequest.getId()).orElseThrow(() -> new NullPointerException(orderJudgeRequest.getId() + "번 주문은 존재하지않습니다"));
         confirmOrder(orderJudgeRequest, order);
+
+        OrderConfirmResponse orderConfirmResponse = OrderConfirmResponse
+                .builder()
+                .orderStatus(order.getOrderStatus())
+                .id(order.getId())
+                .build();
+
         log.info("주문 승인로직 종료");
-        return new ApiResponse(SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
+        return new ApiResponse(orderConfirmResponse,SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
     }
 
     private void confirmOrder(OrderJudgeRequest orderJudgeRequest, Order order) {
 
         Payment byOrderId = paymentRepository.findByOrderId(orderJudgeRequest.getId());
-        if(byOrderId!=null){
-            throw new NullPointerException("해당 결제는 존재하지않습니다");
-        }
 
+        if(byOrderId!=null){
+            throw new RuntimeException("해당 주문은 이미 결제중입니다");
+        }
         updateOrderStatus(orderJudgeRequest, order);
+
         if(orderJudgeRequest.getOrderStatus().equals(OrderStatus.APPROVED)){
             Product product = order.getProduct();
             Consumer consumer = order.getConsumer();
@@ -283,6 +302,11 @@ public class OrderService {
     }
 
     private void updateOrderStatus(OrderJudgeRequest orderJudgeRequest, Order order) {
+
+        if (order.getOrderStatus()==OrderStatus.APPROVED){
+            throw new RuntimeException("해당 주문은 이미 승인되었습니다");
+        }
+
         order.setOrderStatus(orderJudgeRequest.getOrderStatus());
     }
 }

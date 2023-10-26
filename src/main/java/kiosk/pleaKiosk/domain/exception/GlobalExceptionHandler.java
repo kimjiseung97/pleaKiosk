@@ -5,11 +5,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import kiosk.pleaKiosk.domain.codes.ErrorCode;
 import kiosk.pleaKiosk.domain.dto.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -18,11 +21,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
     private final HttpStatus HTTP_STATUS_OK = HttpStatus.OK;
+
+    private final MessageSource messageSource;
+
+
+    public GlobalExceptionHandler(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
 
     /**
      * [Exception] API 호출 시 '객체' 혹은 '파라미터' 데이터 값이 유효하지 않은 경우
@@ -30,18 +43,42 @@ public class GlobalExceptionHandler {
      * @param ex MethodArgumentNotValidException
      * @return ResponseEntity<ErrorResponse>
      */
+//    @ExceptionHandler(MethodArgumentNotValidException.class)
+//    protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+//        log.error("handleMethodArgumentNotValidException", ex);
+//        BindingResult bindingResult = ex.getBindingResult();
+//        StringBuilder stringBuilder = new StringBuilder();
+//        for (FieldError fieldError : bindingResult.getFieldErrors()) {
+//            stringBuilder.append(fieldError.getField()).append(":");
+//            stringBuilder.append(fieldError.getDefaultMessage());
+//            stringBuilder.append(", ");
+//        }
+//        final ErrorResponse response = ErrorResponse.of(ErrorCode.NOT_VALID_ERROR, String.valueOf(stringBuilder));
+//        return new ResponseEntity<>(response, HTTP_STATUS_OK);
+//    }
+
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
-        log.error("handleMethodArgumentNotValidException", ex);
-        BindingResult bindingResult = ex.getBindingResult();
-        StringBuilder stringBuilder = new StringBuilder();
-        for (FieldError fieldError : bindingResult.getFieldErrors()) {
-            stringBuilder.append(fieldError.getField()).append(":");
-            stringBuilder.append(fieldError.getDefaultMessage());
-            stringBuilder.append(", ");
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex){
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors()
+                .forEach(c -> {
+                    errors.put(((FieldError) c).getField(), getErrorMessage(c));
+                });
+        return ResponseEntity.badRequest().body(errors);
+    }
+
+
+
+
+    private String getErrorMessage(ObjectError error) {
+        String[] codes = error.getCodes();
+        for (String code : codes) {
+            try {
+                return messageSource.getMessage(code, error.getArguments(), Locale.KOREA);
+            } catch (NoSuchMessageException ignored) {}
         }
-        final ErrorResponse response = ErrorResponse.of(ErrorCode.NOT_VALID_ERROR, String.valueOf(stringBuilder));
-        return new ResponseEntity<>(response, HTTP_STATUS_OK);
+        return error.getDefaultMessage();
     }
 
     /**
@@ -182,6 +219,8 @@ public class GlobalExceptionHandler {
         final ErrorResponse response = ErrorResponse.of(ErrorCode.INTERNAL_SERVER_ERROR, ex.getMessage());
         return new ResponseEntity<>(response, HTTP_STATUS_OK);
     }
+
+
 
     /**
      *
