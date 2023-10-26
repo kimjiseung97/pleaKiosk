@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/pay")
+@RequestMapping("/kiosk/pay")
 public class PayController {
 
     private final PaymentService payService;
