@@ -196,4 +196,17 @@ public class GlobalExceptionHandler {
         final ErrorResponse response = ErrorResponse.of(ErrorCode.BAD_REQUEST_ERROR,ex.getMessage());
         return new ResponseEntity<>(response,HTTP_STATUS_OK);
     }
+
+    /**
+     *
+     * @param ex RuntimeException
+     * @return ResponseEntity<ErrorResponse>
+     */
+
+    @ExceptionHandler(RuntimeException.class)
+    protected final ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex){
+        log.error("RuntimeException ={}",ex);
+        final ErrorResponse response = ErrorResponse.of(ErrorCode.UPDATE_ERROR,ex.getMessage());
+        return new ResponseEntity<>(response,HTTP_STATUS_OK);
+    }
 }
