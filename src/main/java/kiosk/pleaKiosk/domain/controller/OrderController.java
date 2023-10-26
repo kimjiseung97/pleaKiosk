@@ -13,7 +13,7 @@ import javax.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/kiosk")
+@RequestMapping("/kiosk/order")
 @Slf4j
 public class OrderController {
 

@@ -55,7 +55,7 @@ public class OrderService {
                 .build();
 
         log.info("주문등록 로직 종료");
-        return new ApiResponse(orderRegisterResponse,SuccessCode.INSERT_SUCCESS.getStatus(),SuccessCode.INSERT_SUCCESS.getMessage());
+        return new ApiResponse<>(orderRegisterResponse,SuccessCode.INSERT_SUCCESS.getStatus(),SuccessCode.INSERT_SUCCESS.getMessage());
 
     }
 
@@ -129,7 +129,7 @@ public class OrderService {
                 .productResponse(productResponse)
                 .build();
 
-        return new ApiResponse(productAndOrderList,SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
+        return new ApiResponse<>(productAndOrderList,SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
     }
 
     private ApiResponse<Page<OrderRegisterResponse>> getPageApiResponse(Page<Order> allOrderList) {
@@ -145,7 +145,7 @@ public class OrderService {
                 .orderStatus(Order.getOrderStatus())
                 .build());
 
-        return new ApiResponse(orderRegisterResponses, SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
+        return new ApiResponse<>(orderRegisterResponses, SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
     }
 
     @Transactional(readOnly = true)
@@ -193,7 +193,7 @@ public class OrderService {
     private void updateOrderAndProductAmount(OrderModifyRequest orderModifyRequest, Order findOrderById, Product findProductByOrderNumber) throws RuntimeException {
         //주문상태가 승인이거나 거절이라면 익셉션 처리
         if(findOrderById.getOrderStatus()==OrderStatus.APPROVED || findOrderById.getOrderStatus()==OrderStatus.REJECTED){
-            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
+            throw new RuntimeException("해당 주문은 승인또는 거절된 상태입니다");
         }
         //상품번호가 바뀌었다면
         if(!Objects.equals(findProductByOrderNumber.getId(), orderModifyRequest.getProductId())) {
