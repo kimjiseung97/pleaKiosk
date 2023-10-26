@@ -1,10 +1,6 @@
 package kiosk.pleaKiosk.domain.controller;
-import kiosk.pleaKiosk.domain.codes.ErrorCode;
-import kiosk.pleaKiosk.domain.codes.SuccessCode;
 import kiosk.pleaKiosk.domain.dto.request.*;
-import kiosk.pleaKiosk.domain.dto.response.ApiResponse;
-import kiosk.pleaKiosk.domain.dto.response.OrderModifyResponse;
-import kiosk.pleaKiosk.domain.dto.response.OrderResponse;
+import kiosk.pleaKiosk.domain.dto.response.*;
 import kiosk.pleaKiosk.domain.entity.Order;
 import kiosk.pleaKiosk.domain.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -30,22 +26,22 @@ public class OrderController {
     }
 
     @GetMapping("/{productId}/getall-orders")
-    public ApiResponse<Page<OrderResponse>> getOrderListByProduct(@PathVariable Long productId , @RequestParam(defaultValue = "1") int page,
-                                             @RequestParam(defaultValue = "10") int size,
-                                             @RequestParam(defaultValue = "id") String sort) throws IOException {
+    public ApiResponse<ProductAndOrderList> getOrderListByProduct(@PathVariable Long productId , @RequestParam(defaultValue = "1") int page,
+                                                                  @RequestParam(defaultValue = "10") int size,
+                                                                  @RequestParam(defaultValue = "id") String sort) throws IOException {
         if (page < 1 || size < 1) {
-            throw new IllegalArgumentException(String.valueOf(ErrorCode.BAD_REQUEST_ERROR));
+            throw new IllegalArgumentException("페이지는 음수값이나 0페이지로 반환할 수 없습니다.");
         }
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(sort));
         return orderService.getAllOrderList(productId, pageable);
     }
 
     @GetMapping("/{consumerId}/myorder")
-    public ApiResponse<Page<OrderResponse>> getMyOrderList(@PathVariable Long consumerId, @RequestParam(defaultValue = "1") int page,
-                                                           @RequestParam(defaultValue = "10") int size,
-                                                           @RequestParam(defaultValue = "id") String sort) throws IOException {
+    public ApiResponse<Page<OrderRegisterResponse>> getMyOrderList(@PathVariable Long consumerId, @RequestParam(defaultValue = "1") int page,
+                                                                   @RequestParam(defaultValue = "10") int size,
+                                                                   @RequestParam(defaultValue = "id") String sort) throws IOException {
         if (page < 1 || size < 1) {
-            throw new IllegalArgumentException(String.valueOf(ErrorCode.BAD_REQUEST_ERROR));
+            throw new IllegalArgumentException("페이지는 음수값이나 0페이지로 반환할 수 없습니다.");
         }
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(sort));
         return orderService.getMyOrderList(consumerId,pageable);
