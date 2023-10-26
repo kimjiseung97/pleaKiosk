@@ -1,19 +1,15 @@
 package kiosk.pleaKiosk.domain.dto.response;
 
 import kiosk.pleaKiosk.domain.entity.OrderStatus;
-import kiosk.pleaKiosk.domain.entity.Product;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
-
-@Setter
 @AllArgsConstructor
 @Builder
 @Getter
-public class OrderResponse {
-
-    private ProductResponse productResponse;
-
+public class OrderList {
     private Long orderId;
 
     private Long consumerId;
@@ -25,6 +21,4 @@ public class OrderResponse {
     private LocalDateTime lastModifiedDate;
 
     private OrderStatus orderStatus;
-
-
 }

@@ -5,9 +5,7 @@ import kiosk.pleaKiosk.domain.dto.request.OrderDeleteRequest;
 import kiosk.pleaKiosk.domain.dto.request.OrderJudgeRequest;
 import kiosk.pleaKiosk.domain.dto.request.OrderModifyRequest;
 import kiosk.pleaKiosk.domain.dto.request.OrderRequest;
-import kiosk.pleaKiosk.domain.dto.response.ApiResponse;
-import kiosk.pleaKiosk.domain.dto.response.OrderModifyResponse;
-import kiosk.pleaKiosk.domain.dto.response.OrderResponse;
+import kiosk.pleaKiosk.domain.dto.response.*;
 import kiosk.pleaKiosk.domain.entity.*;
 import kiosk.pleaKiosk.domain.repository.ConsumerRepository;
 import kiosk.pleaKiosk.domain.repository.OrderRepository;
@@ -20,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.validation.constraints.Null;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -39,8 +39,8 @@ public class OrderService {
     public ApiResponse<Order> registerOrder(OrderRequest orderRequest) {
         log.info("주문등록 로직 시작 ={}",orderRequest);
 
-        Product product = productRepository.findById(orderRequest.getProductId()).orElseThrow(() ->new RuntimeException(String.valueOf(ErrorCode.INSERT_ERROR)));
-        Consumer consumer = consumerRepository.findById(orderRequest.getTableId()).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.INSERT_ERROR)));
+        Product product = productRepository.findById(orderRequest.getProductId()).orElseThrow(() ->new NullPointerException("해당하는 상품을 찾을 수 없습니다"));
+        Consumer consumer = consumerRepository.findById(orderRequest.getTableId()).orElseThrow(() -> new NullPointerException("해당하는 테이블을 찾을 수 없습니다"));
 
         Order order = saveProductAndOrderAndPayment(orderRequest, product, consumer);
         log.info("주문등록 로직 종료");
@@ -87,47 +87,64 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public ApiResponse<Page<OrderResponse>> getAllOrderList(Long productId, Pageable pageable) {
+    public ApiResponse<ProductAndOrderList> getAllOrderList(Long productId, Pageable pageable) {
         log.info("전체 주문리스트 페이징 로직 시작 = {}",pageable);
-        Product product = productRepository.findById(productId).orElseThrow(() -> new NullPointerException());
+        Product product = productRepository.findById(productId).orElseThrow(() -> new NullPointerException("해당하는 상품이 존재하지않습니다"));
         Page<Order> allOrderList = orderRepository.findByProduct(product, pageable);
-        log.info("전체 주문리스트 페이징 로직 종료");
-        Page<OrderResponse> orderResponses = allOrderList.map(Order -> OrderResponse
+        return makeProductAndOrderList(product, allOrderList);
+    }
+
+    private ApiResponse<ProductAndOrderList> makeProductAndOrderList(Product product, Page<Order> allOrderList) {
+        ProductResponse productResponse = ProductResponse
                 .builder()
+                .amount(product.getAmount())
+                .productName(product.getName())
+                .id(product.getId())
+                .build();
+
+        Page<OrderList> orderList = allOrderList.map(Order -> OrderList
+                .builder()
+                .amount(Order.getAmount())
+                .orderStatus(Order.getOrderStatus())
+                .consumerId(Order.getConsumer().getId())
+                .orderId(Order.getId())
+                .createdDate(Order.getCreatedDate())
+                .lastModifiedDate(Order.getLastModifiedDate())
+                .build());
+
+        ProductAndOrderList productAndOrderList = ProductAndOrderList
+                .builder()
+                .orderList(orderList)
+                .productResponse(productResponse)
+                .build();
+
+        return new ApiResponse(productAndOrderList,SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
+    }
+
+    private ApiResponse<Page<OrderRegisterResponse>> getPageApiResponse(Page<Order> allOrderList) {
+        Page<OrderRegisterResponse> orderRegisterResponses = allOrderList.map(Order -> OrderRegisterResponse
+                .builder()
+                .orderId(Order.getId())
                 .productId(Order.getProduct().getId())
                 .productName(Order.getProduct().getName())
                 .amount(Order.getAmount())
                 .orderId(Order.getId())
                 .consumerId(Order.getConsumer().getId())
                 .createdDate(Order.getCreatedDate())
-                .lastModifiedDate(Order.getLastModifiedDate())
                 .orderStatus(Order.getOrderStatus())
                 .build());
 
-        return new ApiResponse(orderResponses,SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
-
-
+        return new ApiResponse(orderRegisterResponses, SuccessCode.SELECT_SUCCESS.getStatus(),SuccessCode.SELECT_SUCCESS.getMessage());
     }
 
     @Transactional(readOnly = true)
-    public ApiResponse<Page<OrderResponse>> getMyOrderList(Long consumerId, Pageable pageable) {
+    public ApiResponse<Page<OrderRegisterResponse>> getMyOrderList(Long consumerId, Pageable pageable) {
         log.info("내 주문리스트 확인 로직 시작= {}",pageable);
-        Consumer consumer = consumerRepository.findById(consumerId).orElseThrow(() -> new RuntimeException());
+        Consumer consumer = consumerRepository.findById(consumerId).orElseThrow(() -> new NullPointerException("해당하는 고객이 존재하지않습니다"));
         Page<Order> findOrderListByConsumer = orderRepository.findByConsumer(consumer, pageable);
         log.info("내 주문리스트 확인 로직 종료");
 
-        Page<OrderResponse> orderResponses = findOrderListByConsumer.map(Order -> OrderResponse
-                .builder()
-                .productId(Order.getProduct().getId())
-                .productName(Order.getProduct().getName())
-                .amount(Order.getAmount())
-                .orderId(Order.getId())
-                .consumerId(Order.getConsumer().getId())
-                .createdDate(Order.getCreatedDate())
-                .lastModifiedDate(Order.getLastModifiedDate())
-                .orderStatus(Order.getOrderStatus())
-                .build());
-        return new ApiResponse(orderResponses,SuccessCode.SELECT_SUCCESS.getStatus(), SuccessCode.SELECT_SUCCESS.getMessage());
+        return getPageApiResponse(findOrderListByConsumer);
 
     }
 
@@ -135,7 +152,7 @@ public class OrderService {
     public ApiResponse<OrderModifyResponse> modifyMyOrder(OrderModifyRequest orderModifyRequest) {
         log.info("주문 수정 로직 시작 = {}",orderModifyRequest);
         //주문번호로 주문 가져오기
-        Order findOrderById = orderRepository.findById(orderModifyRequest.getId()).orElseThrow(() -> new NullPointerException());
+        Order findOrderById = orderRepository.findById(orderModifyRequest.getId()).orElseThrow(() -> new NullPointerException(orderModifyRequest.getId()+ "번 주문은 존재하지않습니다"));
 
         //주문번호에 주문된 상품
         Product findProductByOrderNumber = findOrderById.getProduct();
@@ -186,7 +203,7 @@ public class OrderService {
 
         //주문수정요청이 원래 주문수량보다많으면서 재고수량보단 적어야됌
         if(updateRequestAmount>leftamount){
-            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
+            throw new RuntimeException("주문수량이 재고보다많습니다");
         }
         
         if(originalOrderedAmount < updateRequestAmount){
@@ -194,18 +211,21 @@ public class OrderService {
             findOrderById.setAmount(originalOrderedAmount + (updateRequestAmount-originalOrderedAmount));
         }
         findOrderById.setAmount(originalOrderedAmount - (originalOrderedAmount-updateRequestAmount));
+        findOrderById.setLastModifiedDate(LocalDateTime.now());
         findProductByOrderNumber.setAmount(leftamount + (originalOrderedAmount-updateRequestAmount));
+
     }
 
     private void modifyAmountAndProduct(OrderModifyRequest orderModifyRequest, Order findOrderById, Product findProductByOrderNumber) {
             //원래 주문 주문수정요청대로 업데이트해준다
-            Product modifyOrderProduct = productRepository.findById(orderModifyRequest.getProductId()).orElseThrow(() -> new NullPointerException());
+            Product modifyOrderProduct = productRepository.findById(orderModifyRequest.getProductId()).orElseThrow(() -> new NullPointerException(orderModifyRequest.getProductId() + "번 상품은 존재하지않습니다"));
             //재고보다 주문요청이 크면 안됀다
             if(modifyOrderProduct.getAmount() < orderModifyRequest.getAmount()){
-                throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
+                throw new RuntimeException("재고보다 주문수량이 많습니다");
             }
             findOrderById.setProduct(modifyOrderProduct);
             findOrderById.setAmount(orderModifyRequest.getAmount());
+            findOrderById.setLastModifiedDate(LocalDateTime.now());
             modifyOrderProduct.setAmount(modifyOrderProduct.getAmount() - orderModifyRequest.getAmount());
             //원래 들어와있던 주문의 상품재고도 다시 업데이트 해줘야됌
             findProductByOrderNumber.setAmount(findProductByOrderNumber.getAmount() + findOrderById.getAmount());
@@ -220,7 +240,7 @@ public class OrderService {
                 .filter(order -> order.getOrderStatus() == OrderStatus.APPROVED)
                 .collect(Collectors.toList());
         if(!completedOrders.isEmpty()){
-            throw new RuntimeException(String.valueOf(ErrorCode.DELETE_ERROR));
+            throw new RuntimeException("해당주문은 이미 승인되었습니다");
         }
         updateProductAmount(orderDeleteRequest);
 
@@ -232,7 +252,7 @@ public class OrderService {
     }
 
     private void updateProductAmount(OrderDeleteRequest orderDeleteRequest) {
-        Order order = orderRepository.findById(orderDeleteRequest.getId()).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.NOT_FOUND_ERROR)));
+        Order order = orderRepository.findById(orderDeleteRequest.getId()).orElseThrow(() -> new NullPointerException(orderDeleteRequest.getId() +"번 주문은 존재하지않습니다"));
         Product product = order.getProduct();
         product.setAmount(product.getAmount() + order.getAmount());
     }
@@ -240,7 +260,7 @@ public class OrderService {
     @Transactional
     public ApiResponse confirmOrder(OrderJudgeRequest orderJudgeRequest) {
         log.info("주문 승인로직 시작 = {}",orderJudgeRequest);
-        Order order = orderRepository.findById(orderJudgeRequest.getId()).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.NOT_FOUND_ERROR)));
+        Order order = orderRepository.findById(orderJudgeRequest.getId()).orElseThrow(() -> new NullPointerException(orderJudgeRequest.getId() + "번 주문은 존재하지않습니다"));
         confirmOrder(orderJudgeRequest, order);
         log.info("주문 승인로직 종료");
         return new ApiResponse(SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
@@ -250,7 +270,7 @@ public class OrderService {
 
         Payment byOrderId = paymentRepository.findByOrderId(orderJudgeRequest.getId());
         if(byOrderId!=null){
-            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
+            throw new NullPointerException("해당 결제는 존재하지않습니다");
         }
 
         updateOrderStatus(orderJudgeRequest, order);
