@@ -55,12 +55,12 @@ public class ProductService {
     public ApiResponse<Product> modifyProduct(ProductModifyRequest productModifyRequest) {
         log.info("상품 정보 수정 로직 시작 productModifyRequest = {}",productModifyRequest);
 
-        Product findProductById = productRepository.findById(productModifyRequest.getId()).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR)));
+        Product findProductById = productRepository.findById(productModifyRequest.getId()).orElseThrow(() -> new NullPointerException("해당 상품을 찾을 수 없습니다"));
 
         findOrderListProduct(findProductById);
 
         findProductById.updateEntity(productModifyRequest.getName(),productModifyRequest.getPrice(),productModifyRequest.getAmount());
-        log.info("상품 정보 수정 로직 종료 productModifyRequest = {}",findProductById);
+        log.info("상품 정보 수정 로직 종료 productModifyRequest = {}");
 
         return new ApiResponse(findProductById,SuccessCode.UPDATE_SUCCESS.getStatus(), SuccessCode.UPDATE_SUCCESS.getMessage());
 
@@ -69,7 +69,7 @@ public class ProductService {
     private void findOrderListProduct(Product findProductById) {
         List<Order> findOrderListByProduct= orderRepository.findByProduct(findProductById);
         if(!findOrderListByProduct.isEmpty()){
-            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
+            throw new RuntimeException("해당상품에 들어온 주문이 존재합니다");
         }
     }
 
@@ -77,7 +77,7 @@ public class ProductService {
     public ApiResponse deleteProduct(Long id) {
         log.info("상품삭제 로직 시작  - {}",id);
 
-        Product findProductById = productRepository.findById(id).orElseThrow(() -> new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR)));
+        Product findProductById = productRepository.findById(id).orElseThrow(() -> new NullPointerException("해당 상품은 존재하지않습니다"));
 
         findOrderListProduct(findProductById);
 

@@ -31,7 +31,7 @@ public class ProductController {
                                                   @RequestParam(defaultValue = "10") int size,
                                                   @RequestParam(defaultValue = "id") String sort) throws IOException {
         if (page < 1 || size < 1) {
-            throw new IOException(String.valueOf(ErrorCode.IO_ERROR));
+            throw new IllegalArgumentException("페이지는 음수나 0페이지로 반환할 수 없습니다");
         }
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(sort));
         return productService.getAllProduct(pageable);

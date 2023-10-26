@@ -45,6 +45,7 @@ public class Product {
         this.name = updateName;
         this.price = updatePrice;
         this.amount = updateAmount;
+        this.lastModifiedDate = LocalDateTime.now();
     }
 
 }
