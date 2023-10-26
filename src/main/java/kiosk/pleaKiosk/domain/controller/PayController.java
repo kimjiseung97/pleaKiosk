@@ -3,6 +3,7 @@ package kiosk.pleaKiosk.domain.controller;
 import kiosk.pleaKiosk.domain.dto.request.PayOneRequest;
 import kiosk.pleaKiosk.domain.dto.request.PayRequest;
 import kiosk.pleaKiosk.domain.dto.response.ApiResponse;
+import kiosk.pleaKiosk.domain.dto.response.PaymentResponse;
 import kiosk.pleaKiosk.domain.entity.Payment;
 import kiosk.pleaKiosk.domain.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class PayController {
     private final PaymentService payService;
 
     @RequestMapping(value = "/payment",method = {RequestMethod.PUT ,RequestMethod.PATCH})
-    public ApiResponse<Payment> myPayment(@Valid @RequestBody PayRequest request){
+    public ApiResponse<PaymentResponse> myPayment(@Valid @RequestBody PayRequest request){
         return payService.payment(request);
     }
 
