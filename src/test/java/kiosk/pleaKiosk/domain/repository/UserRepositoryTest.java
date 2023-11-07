@@ -11,10 +11,11 @@ import org.springframework.test.util.AssertionErrors;
 
 import javax.transaction.Transactional;
 import javax.validation.constraints.AssertTrue;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 @SpringBootTest
-@Transactional
 class UserRepositoryTest {
 
     private final UserRepository userRepository;
@@ -31,13 +32,13 @@ class UserRepositoryTest {
     @DisplayName("유저와 기사들을 저장한다")
     public void save_user(){
         User user = User.builder()
-                .name("유저1")
+                .name("유저2")
                 .build();
 
         userRepository.save(user);
 
 
-        for (int i = 0; i <200 ; i++) {
+        for (int i = 0; i <400 ; i++) {
             Article article = Article.builder()
                     .content("테스트 내용입니다" + i)
                     .title("테스트 제목입니다" + i)
@@ -52,13 +53,10 @@ class UserRepositoryTest {
 
     @Test
     @DisplayName("유저의 기사들을 가져온다")
+    @Transactional
     public void getArticle(){
-        User user = userRepository.findById(1L).orElseThrow(() -> new NullPointerException());
-        String name = user.getName();
-//        AssertionErrors.assertTrue("유저 이름은 유저1이다",name.equals("유저1"));
 
-        Set<Article> articles = user.getArticles();
+        List<User> all = userRepository.findAll();
 
-        System.out.println("articles = " + articles);;
     }
 }

@@ -5,12 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.util.AssertionErrors;
-
-import javax.validation.constraints.AssertTrue;
-
 import java.util.List;
-
 import static org.springframework.test.util.AssertionErrors.*;
 
 @SpringBootTest
@@ -29,7 +24,7 @@ class ProductRepositoryTest {
         for (int i = 1; i <=20 ; i++) {
             Product build = Product
                     .builder()
-                    .amount(150 + i)
+                    .amount(150 + i * 10)
                     .name("상품" + i)
                     .price(4000 + i*100)
                     .build();
