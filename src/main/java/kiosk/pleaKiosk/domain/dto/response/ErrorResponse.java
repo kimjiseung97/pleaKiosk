@@ -30,6 +30,7 @@ public class ErrorResponse {
         this.errors = new ArrayList<>();
     }
 
+
     /**
      * ErrorResponse 생성자-2
      *

@@ -231,7 +231,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     protected final ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex){
-        log.error("IllegalArgumentException = {}",ex);
+        log.error("IllegalArgumentException",ex);
         final ErrorResponse response = ErrorResponse.of(ErrorCode.BAD_REQUEST_ERROR,ex.getMessage());
         return new ResponseEntity<>(response,HTTP_STATUS_OK);
     }

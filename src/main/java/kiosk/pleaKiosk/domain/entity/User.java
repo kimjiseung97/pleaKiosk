@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
+import java.util.List;
 import java.util.Set;
 
 import static java.util.Collections.emptySet;
@@ -26,6 +27,6 @@ public class User{
     private String name;
 
     @OneToMany(mappedBy = "user",fetch =FetchType.LAZY)
-    @BatchSize(size = 1000) // 예시: 한 번에 10개의 Article 가져오기
-    private Set<Article> articles = emptySet();
+//    @BatchSize(size = 50) // 예시: 한 번에 10개의 Article 가져오기
+    private List<Article> articles;
 }

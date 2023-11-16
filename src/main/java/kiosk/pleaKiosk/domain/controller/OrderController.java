@@ -36,6 +36,9 @@ public class OrderController {
     }
 
     @GetMapping("/{productId}/getall-orders")
+    @Operation(description = "상품에 들어온 주문을 페이징해서 가져오는 API")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "주문리스트조회 성공"), @ApiResponse(responseCode = "400", description = "주문리스트 조회 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))) })
     public commonResponse<ProductAndOrderList> getOrderListByProduct(@PathVariable Long productId , @RequestParam(defaultValue = "1") int page,
                                                                      @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "id") String sort){
         if (page < 1 || size < 1) {
@@ -46,6 +49,9 @@ public class OrderController {
     }
 
     @GetMapping("/{consumerId}/myorder")
+    @Operation(description = "특정 테이블에서 주문한 주문리스트를 페이징해서 가져오는 API")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "주문리스트조회 성공"), @ApiResponse(responseCode = "400", description = "주문리스트 조회 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))) })
     public commonResponse<Page<OrderRegisterResponse>> getMyOrderList(@PathVariable Long consumerId, @RequestParam(defaultValue = "1") int page,
                                                                       @RequestParam(defaultValue = "10") int size,
                                                                       @RequestParam(defaultValue = "id") String sort){
@@ -57,16 +63,25 @@ public class OrderController {
     }
 
     @RequestMapping(value = "/modifymyorder",method = {RequestMethod.PUT ,RequestMethod.PATCH})
+    @Operation(description = "주문을 수정하는 API")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "주문수정 성공"), @ApiResponse(responseCode = "400", description = "주문수정 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))) })
     public commonResponse<OrderModifyResponse> modifyOrder(@Valid @RequestBody OrderModifyRequest orderModifyRequest){
         return orderService.modifyMyOrder(orderModifyRequest);
     }
 
     @DeleteMapping("/deleteorder")
+    @Operation(description = "주문을 취소(삭제)하는 API")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "주문취소(삭제) 성공"), @ApiResponse(responseCode = "400", description = "주문취소(삭제) 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))) })
     public commonResponse deleteProduct(@Valid @RequestBody OrderDeleteRequest orderDeleteRequest){
         return orderService.deleteOrder(orderDeleteRequest);
     }
 
     @RequestMapping(value = "/confirm",method = {RequestMethod.PUT ,RequestMethod.PATCH})
+    @Operation(description = "주문 승인 or 반려하는 API")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "주문상태변경 성공"), @ApiResponse(responseCode = "400", description = "주문상태변경 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))) })
     public commonResponse<OrderConfirmResponse> modifyOrder(@Valid @RequestBody OrderJudgeRequest orderJudgeRequest){
         return orderService.confirmOrder(orderJudgeRequest);
     }

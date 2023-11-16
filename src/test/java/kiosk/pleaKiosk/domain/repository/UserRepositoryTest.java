@@ -58,5 +58,13 @@ class UserRepositoryTest {
 
         List<User> all = userRepository.findAll();
 
+        User user = all.get(0);
+
+        List<Article> articles = user.getArticles();
+
+        for (Article article : articles) {
+            System.out.println("article = " + article);
+        }
+
     }
 }

@@ -1,10 +1,9 @@
 package kiosk.pleaKiosk.domain.service;
 
-import kiosk.pleaKiosk.domain.codes.ErrorCode;
 import kiosk.pleaKiosk.domain.codes.SuccessCode;
 import kiosk.pleaKiosk.domain.dto.request.PayOneRequest;
 import kiosk.pleaKiosk.domain.dto.request.PayRequest;
-import kiosk.pleaKiosk.domain.dto.response.ApiResponse;
+import kiosk.pleaKiosk.domain.dto.response.commonResponse;
 import kiosk.pleaKiosk.domain.dto.response.PaymentResponse;
 import kiosk.pleaKiosk.domain.entity.Consumer;
 import kiosk.pleaKiosk.domain.entity.Payment;
@@ -29,12 +28,12 @@ public class PaymentService {
 
     private final ConsumerRepository consumerRepository;
     @Transactional
-    public ApiResponse<PaymentResponse> payment(PayRequest request) {
+    public commonResponse<PaymentResponse> payment(PayRequest request) {
         Payment payment = paymentRepository.findById(request.getId()).orElseThrow(() -> new NullPointerException("해당번호의 결제정보를 찾을 수 없습니다"));
         log.info("결제 완료 로직 시작 = {}",payment);
 
         if(payment.getPayStatus()==PaymentStatus.PAID){
-            throw new RuntimeException("이미 결제완료된 결제정보입니다");
+            throw new RuntimeException("이미 결제완료된 결제 정보 입니다");
         }
 
         if(payment.getPayTotal()!=request.getPayTotal()){
@@ -42,10 +41,12 @@ public class PaymentService {
         }
         updatePayStatus(payment);
 
+        payment.getOrder().setPaymentStatus(PaymentStatus.PAID);
+
         PaymentResponse paymentResponse = makePaymentRsponse(payment);
         log.info("결제 완료 로직 종료");
 
-        return new ApiResponse(paymentResponse,SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
+        return new commonResponse<>(paymentResponse,SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
     }
 
     private PaymentResponse makePaymentRsponse(Payment payment) {
@@ -67,12 +68,12 @@ public class PaymentService {
     }
 
     @Transactional
-    public ApiResponse<List<Payment>> allPayment(@Valid PayOneRequest request) {
-        Consumer consumer = consumerRepository.findById(request.getConsumerId()).orElseThrow(() -> new NullPointerException());
+    public commonResponse<List<Payment>> allPayment(@Valid PayOneRequest request) {
+        Consumer consumer = consumerRepository.findById(request.getConsumerId()).orElseThrow(() -> new NullPointerException("해당 고객은 존재하지않습니다"));
         List<Payment> allPayment = paymentRepository.findAllByConsumer(consumer);
         updateAllPaymentStatus(request, allPayment);
 
-        return new ApiResponse(allPayment,SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
+        return new commonResponse<>(allPayment,SuccessCode.UPDATE_SUCCESS.getStatus(),SuccessCode.UPDATE_SUCCESS.getMessage());
 
     }
 
@@ -82,7 +83,7 @@ public class PaymentService {
             totalSum += payment.getPayTotal();
         }
         if(request.getPayTotal()!=totalSum){
-            throw new RuntimeException(String.valueOf(ErrorCode.UPDATE_ERROR));
+            throw new RuntimeException("금액이 모자릅니다");
         }
         allPayment.forEach(this::updatePayStatus);
     }
