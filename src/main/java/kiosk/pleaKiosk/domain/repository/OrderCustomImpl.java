@@ -24,13 +24,14 @@ public class OrderCustomImpl implements OrderCustom{
     public Page<Order> getAllOrderList(Product product, Pageable pageable) {
 
         QOrder order = QOrder.order;
+        QProduct product1 = QProduct.product;
 
-        QueryResults<Order> orderQueryResults = jpaQueryFactory.select(order)
-                .from(order)
+        QueryResults<Order> orderQueryResults = jpaQueryFactory.selectFrom(order)
+                .join(order.product).fetchJoin()  // 페치 조인 사용
                 .where(order.product.eq(product))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
-                .fetchResults();
+                .fetchResults();;
 
         return new PageImpl<>(orderQueryResults.getResults(), pageable, orderQueryResults.getTotal());
     }

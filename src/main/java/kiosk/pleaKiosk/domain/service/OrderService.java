@@ -106,11 +106,28 @@ public class OrderService {
     }
 
     private commonResponse<ProductAndOrderList> makeProductAndOrderList(Product product, Page<Order> allOrderList) {
-        ProductResponse productResponse = ProductResponse.builder().amount(product.getAmount()).productName(product.getName()).id(product.getId()).build();
+        ProductResponse productResponse = ProductResponse
+                .builder()
+                .amount(product.getAmount())
+                .productName(product.getName())
+                .id(product.getId())
+                .build();
 
-        Page<OrderList> orderList = allOrderList.map(Order -> OrderList.builder().amount(Order.getAmount()).orderStatus(Order.getOrderStatus()).consumerId(Order.getConsumer().getId()).orderId(Order.getId()).createdDate(Order.getCreatedDate()).lastModifiedDate(Order.getLastModifiedDate()).build());
+        Page<OrderList> orderList = allOrderList
+                .map(Order -> OrderList
+                        .builder()
+                        .amount(Order.getAmount())
+                        .orderStatus(Order.getOrderStatus())
+                        .consumerId(Order.getConsumer().getId())
+                        .orderId(Order.getId()).createdDate(Order.getCreatedDate())
+                        .lastModifiedDate(Order.getLastModifiedDate())
+                        .build());
 
-        ProductAndOrderList productAndOrderList = ProductAndOrderList.builder().orderList(orderList).productResponse(productResponse).build();
+        ProductAndOrderList productAndOrderList = ProductAndOrderList
+                .builder()
+                .orderList(orderList)
+                .productResponse(productResponse)
+                .build();
 
         return new commonResponse<>(productAndOrderList, SuccessCode.SELECT_SUCCESS.getStatus(), SuccessCode.SELECT_SUCCESS.getMessage());
     }
