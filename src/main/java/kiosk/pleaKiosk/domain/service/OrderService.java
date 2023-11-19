@@ -101,7 +101,7 @@ public class OrderService {
     public commonResponse<ProductAndOrderList> getAllOrderList(Long productId, Pageable pageable) {
         log.info("전체 주문리스트 페이징 로직 시작 = {}", pageable);
         Product product = productRepository.findById(productId).orElseThrow(() -> new NullPointerException("해당하는 상품이 존재하지않습니다"));
-        Page<Order> allOrderList = orderRepository.findByProduct(product, pageable);
+        Page<Order> allOrderList = orderRepository.getAllOrderList(product,pageable);
         return makeProductAndOrderList(product, allOrderList);
     }
 
