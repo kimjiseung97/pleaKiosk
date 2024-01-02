@@ -8,5 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface OrderCustom {
-    Page<Order> getAllOrderList(Product product, Pageable pageable);
+    Page<Order> getAllOrderList(Product product,Pageable pageable);
+
+    Page<Order> findByConsumer(Long consumerId, Pageable pageable);
 }

@@ -133,7 +133,17 @@ public class OrderService {
     }
 
     private commonResponse<Page<OrderRegisterResponse>> getPageApiResponse(Page<Order> allOrderList) {
-        Page<OrderRegisterResponse> orderRegisterResponses = allOrderList.map(Order -> OrderRegisterResponse.builder().orderId(Order.getId()).productId(Order.getProduct().getId()).productName(Order.getProduct().getName()).amount(Order.getAmount()).orderId(Order.getId()).consumerId(Order.getConsumer().getId()).createdDate(Order.getCreatedDate()).orderStatus(Order.getOrderStatus()).build());
+        Page<OrderRegisterResponse> orderRegisterResponses = allOrderList
+                .map(Order -> OrderRegisterResponse
+                        .builder()
+                        .orderId(Order.getId())
+                        .productId(Order.getProduct().getId())
+                        .productName(Order.getProduct().getName())
+                        .amount(Order.getAmount()).orderId(Order.getId())
+                        .consumerId(Order.getConsumer().getId())
+                        .createdDate(Order.getCreatedDate())
+                        .orderStatus(Order.getOrderStatus())
+                        .build());
 
         return new commonResponse<>(orderRegisterResponses, SuccessCode.SELECT_SUCCESS.getStatus(), SuccessCode.SELECT_SUCCESS.getMessage());
     }
@@ -141,8 +151,10 @@ public class OrderService {
     @Transactional(readOnly = true)
     public commonResponse<Page<OrderRegisterResponse>> getMyOrderList(Long consumerId, Pageable pageable) {
         log.info("내 주문리스트 확인 로직 시작= {}", pageable);
-        Consumer consumer = consumerRepository.findById(consumerId).orElseThrow(() -> new NullPointerException("해당하는 고객이 존재하지않습니다"));
-        Page<Order> findOrderListByConsumer = orderRepository.findByConsumer(consumer, pageable);
+        Consumer consumer = consumerRepository
+                .findById(consumerId)
+                .orElseThrow(() -> new NullPointerException("해당하는 고객이 존재하지않습니다"));
+        Page<Order> findOrderListByConsumer = orderRepository.findByConsumer(consumerId, pageable);
         log.info("내 주문리스트 확인 로직 종료");
 
         return getPageApiResponse(findOrderListByConsumer);
