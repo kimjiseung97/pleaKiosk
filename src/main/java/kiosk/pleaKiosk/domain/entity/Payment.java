@@ -44,6 +44,4 @@ public class Payment {
     @Column(name = "PAY_TOTAL")
     private int payTotal;
 
-
-
 }

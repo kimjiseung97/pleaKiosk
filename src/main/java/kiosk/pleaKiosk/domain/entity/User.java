@@ -4,13 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.BatchSize;
-
 import javax.persistence.*;
 import java.util.List;
-import java.util.Set;
-
-import static java.util.Collections.emptySet;
 
 @Entity
 @Table(name = "TB_USER")
