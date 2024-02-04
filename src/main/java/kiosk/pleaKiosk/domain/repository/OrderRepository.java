@@ -14,5 +14,4 @@ public interface OrderRepository extends JpaRepository<Order,Long>,OrderCustom{
      List<Order> findByProduct(Product product);
 
      Page<Order> findByConsumer(Consumer consumer, Pageable pageable);
-
 }
