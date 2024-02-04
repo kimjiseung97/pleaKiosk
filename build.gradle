@@ -75,3 +75,7 @@ compileQuerydsl {
 }
 // 여기까지
 
+jar{
+	enabled = false
+
+}
